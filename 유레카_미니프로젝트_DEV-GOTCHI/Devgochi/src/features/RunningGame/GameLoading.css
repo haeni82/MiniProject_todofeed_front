@@ -1,0 +1,121 @@
+/* 전체 배경: GameIntro와 비슷하게 어둡게 */
+.loading-container {
+  width: 100%;
+  height: 100vh;
+  background-color: #0a0a12;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* 터미널 창 디자인 */
+.terminal-window {
+  width: 80%;
+  max-width: 600px;
+  height: 400px;
+  background-color: rgba(0, 0, 0, 0.9);
+  border: 1px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 255, 234, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 터미널 상단 바 (빨노초 버튼) */
+.terminal-header {
+  background-color: #2d2d2d;
+  padding: 10px 15px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #333;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+.red { background-color: #ff5f56; }
+.yellow { background-color: #ffbd2e; }
+.green { background-color: #27c93f; }
+
+.terminal-title {
+  color: #999;
+  font-size: 0.8rem;
+  margin-left: 10px;
+}
+
+/* 터미널 본문 (로그 뜨는 곳) */
+.terminal-body {
+  flex: 1;
+  padding: 20px;
+  color: #00ffea; /* 형광 초록/청록 */
+  font-size: 0.9rem;
+  overflow-y: auto; /* 로그 많아지면 스크롤 */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end; /* 로그가 아래부터 쌓이도록 */
+}
+
+.log-line {
+  margin-bottom: 5px;
+  opacity: 0;
+  animation: fadeIn 0.2s forwards;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+.prompt {
+  color: #ff00ff; /* 프롬프트만 다른 색 (마젠타) */
+  margin-right: 10px;
+  font-weight: bold;
+}
+
+/* 깜빡이는 커서 */
+.cursor-block {
+  display: inline-block;
+  width: 10px;
+  height: 1.2em;
+  background-color: #00ffea;
+  animation: blink 1s infinite;
+  vertical-align: middle;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* 하단 로딩바 영역 */
+.loading-bar-area {
+  padding: 20px;
+  background-color: #1a1a1a;
+  border-top: 1px solid #333;
+}
+
+.loading-text {
+  color: #fff;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+.progress-bar-border {
+  width: 100%;
+  height: 10px;
+  background-color: #333;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: #00ffea;
+  box-shadow: 0 0 10px #00ffea;
+  transition: width 0.1s linear;
+}

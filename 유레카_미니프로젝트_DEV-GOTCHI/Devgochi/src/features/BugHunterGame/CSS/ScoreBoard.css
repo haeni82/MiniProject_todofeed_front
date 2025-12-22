@@ -1,0 +1,67 @@
+/* 전체 컨테이너 정렬 */
+.ScoreBoardContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+/* 점수 표시 */
+.ScoreDisplay {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  padding: 10px 30px;
+  border: 2px solid #58a6ff;
+  border-radius: 8px;
+  background-color: #161b22;
+  color: #c9d1d9;
+}
+
+/* 타이머 섹션 (글자 + 게이지) */
+.TimerSection {
+  width: 300px; /* 게이지 바 너비 조절 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.TimerDisplay {
+  font-size: 20px;
+  color: #ffc107;
+  font-weight: bold;
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+}
+
+/* 게이지 바 스타일 */
+.TimerGaugeOuter {
+  width: 100%;
+  height: 10px;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.TimerGaugeInner {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    #58a6ff,
+    #22c55e
+  ); /* 파란색에서 초록색 그라데이션 */
+  transition: width 1s linear; /* 1초마다 부드럽게 줄어듦 */
+}
+
+/* 10초 미만 긴박감 모드 */
+.TimerSection.danger .TimerDisplay {
+  color: #ef4444;
+  transform: scale(1.1);
+}
+
+.TimerSection.danger .TimerGaugeInner {
+  background: #ef4444; /* 빨간색으로 변경 */
+  box-shadow: 0 0 10px #ef4444;
+}

@@ -1,0 +1,215 @@
+/* 기본 레이아웃 */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #0d1117;
+  overflow: hidden;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+/* 애니메이션 키프레임 */
+
+/* 화면 등장 효과 */
+@keyframes containerFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 오답 시 화면 흔들림 */
+@keyframes shakeArea {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-10px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(10px);
+  }
+}
+
+/* 점수 팝업  */
+@keyframes scoreFloat {
+  0% {
+    transform: translate(-50%, 0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -100px);
+    opacity: 0;
+  }
+}
+
+/* 긴박감: 10초 미만 깜빡임 */
+@keyframes dangerPulseArea {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(88, 166, 255, 0.5);
+    border-color: #30363d;
+  }
+  50% {
+    box-shadow: 0 0 50px rgba(255, 77, 77, 0.9);
+    border-color: #ff4d4d;
+    background-color: rgba(255, 0, 0, 0.05);
+  }
+}
+
+/* 타이머 패닉 효과 */
+@keyframes timerPanic {
+  0%,
+  100% {
+    transform: scale(1);
+    color: #ffc107;
+  }
+  50% {
+    transform: scale(1.15);
+    color: #ff4d4d;
+    text-shadow: 0 0 10px #ff4d4d;
+  }
+}
+
+/*  메인 컨테이너 */
+.BugHunterContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  background-color: #0d1117;
+  min-height: 100vh;
+  color: #c9d1d9;
+  animation: containerFadeIn 0.6s ease-out;
+}
+
+/* UI 요소 */
+.ScoreDisplay {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  border: 2px solid #58a6ff;
+  border-radius: 8px;
+  background-color: #161b22;
+  box-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
+}
+
+.TimerDisplay {
+  font-size: 20px;
+  color: #ffc107;
+  margin-bottom: 10px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.TimerDisplay.danger {
+  animation: timerPanic 0.5s infinite;
+}
+
+/* 게임 플레이 영역 */
+.PlayArea {
+  position: relative;
+  width: 600px;
+  height: 800px;
+  margin: auto;
+  overflow: hidden;
+  background-image: var(--bg-image);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  box-shadow: 0 0 20px rgba(88, 166, 255, 0.5);
+  border: 2px solid #30363d;
+  z-index: 10;
+  transition: all 0.2s ease-in-out;
+}
+
+/* 10초 미만 레이지 */
+.PlayArea.danger-mode {
+  animation: dangerPulseArea 0.5s infinite;
+}
+
+/* 점수 팝업 스타일 */
+.score-popup {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #4ade80;
+  font-size: 32px;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(74, 222, 128, 0.8);
+  z-index: 100;
+  pointer-events: none;
+  animation: scoreFloat 0.6s ease-out forwards;
+}
+
+/* 정답 피드백 */
+.PlayArea.correct {
+  box-shadow: 0 0 40px 15px #22c55e;
+  border: 3px solid #16a34a;
+}
+
+/* 오답 피드백  */
+.PlayArea.incorrect {
+  animation: shakeArea 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  box-shadow: 0 0 50px 20px #ef4444 !important;
+  border: 4px solid #dc2626 !important;
+  filter: brightness(0.9);
+}
+
+/* 6. 캐릭터 아이템  */
+.character-item {
+  position: absolute;
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/*  장식 및 버튼 */
+.BodyLevelDeco {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 200px;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+.BodyLevelDeco.left {
+  left: 50px;
+}
+.BodyLevelDeco.right {
+  right: 50px;
+}
+
+button {
+  padding: 12px 24px;
+  font-size: 18px;
+  font-weight: 600;
+  background-color: #238636;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}

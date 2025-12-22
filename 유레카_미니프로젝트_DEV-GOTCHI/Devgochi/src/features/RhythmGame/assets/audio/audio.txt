@@ -1,0 +1,30 @@
+# 오디오 파일 저장 위치
+
+이 폴더에 리듬게임에서 사용할 오디오 파일을 넣으세요.
+
+## 사용 방법
+
+1. MP3, OGG, WAV 등의 오디오 파일을 이 폴더에 복사
+2. `src/features/RhythmGame/Game.tsx`의 `TEST_MUSICS` 배열에서 `audioPath`를 수정
+3. 예: `audioPath: "/audio/your-music.mp3"`
+
+## 파일 형식
+
+- 권장: MP3 (호환성 좋음)
+- 지원: OGG, WAV, M4A 등 (브라우저 지원 형식)
+
+## 주의사항
+
+- 파일명에 공백이나 특수문자 사용 시 주의
+- 파일 크기가 크면 로딩 시간이 걸릴 수 있음
+
+// 2025.12.19 추가 업데이트
+
+// 오디오 파일 경로 헬퍼 함수 (Vite에서 src/ 폴더 내 파일을 동적으로 로드)
+const getAudioPath = (filename: string): string => {
+  return new URL(`./assets/audio/${filename}`, import.meta.url).href;
+};
+
+함수를 사용하여
+ audioPath: getAudioPath("test2.mp3"),
+ 이와 같은 방법으로 정정.
