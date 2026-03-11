@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { decodeToCanvas } from '../components/utils/blurhash';
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 
 interface ShaderUniforms {
   time: number;
@@ -18,7 +17,7 @@ interface ShaderUniforms {
   iconColorR: number;
   iconColorG: number;
   iconColorB: number;
-  glassMode: 'light' | 'dark';
+  glassMode: "light" | "dark";
   shadowIntensity: number;
   shadowOffsetX: number;
   shadowOffsetY: number;
@@ -33,7 +32,7 @@ interface ShaderUniforms {
 
 interface BackgroundMedia {
   url: string;
-  type: 'image' | 'video';
+  type: "image" | "video";
   blurhash?: string;
 }
 
@@ -45,23 +44,31 @@ interface LiquidGlassShaderProps {
   onReady?: () => void;
 }
 
-export default function LiquidGlassShader({ backgroundMedia, uniforms, className, isTransitioning = false, onReady }: LiquidGlassShaderProps) {
+export default function LiquidGlassShader({
+  backgroundMedia,
+  uniforms,
+  className,
+  isTransitioning = false,
+  onReady,
+}: LiquidGlassShaderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
   const textureRef = useRef<WebGLTexture | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-const animationRef = useRef<number | null>(null);
+  const animationRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(Date.now());
   const imageAspectRef = useRef<number>(1);
-  const lastResizeRef = useRef<string>('');
-  
+  const lastResizeRef = useRef<string>("");
+
   // Cache uniform locations for better performance
-  const uniformLocationsRef = useRef<Record<string, WebGLUniformLocation | null>>({});
-  
+  const uniformLocationsRef = useRef<
+    Record<string, WebGLUniformLocation | null>
+  >({});
+
   const [hasDerivatives, setHasDerivatives] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
+
+  const [, setIsImageLoaded] = useState(false);
   const [isShaderReady, setIsShaderReady] = useState(false);
 
   const vertexShaderSource = `
@@ -76,7 +83,8 @@ const animationRef = useRef<number | null>(null);
   `;
 
   // Fragment shader source - simplified with only rectangle, circle, star, hexagon, donut
-  const getFragmentShaderSource = useCallback((hasDerivatives: boolean) => `
+  const getFragmentShaderSource = useCallback(
+    (hasDerivatives: boolean) => `
     #ifdef GL_OES_standard_derivatives
     #extension GL_OES_standard_derivatives : enable
     #endif
@@ -272,13 +280,16 @@ const animationRef = useRef<number | null>(null);
         return vec2(0.0);
       }
       
-      ${hasDerivatives ? `
+      ${
+        hasDerivatives
+          ? `
       #ifdef GL_OES_standard_derivatives
       vec2 grad = normalize(vec2(dFdx(sdf), dFdy(sdf)));
       #else
       vec2 grad = normalize(vec2(0.1, 0.1));
       #endif
-      ` : `
+      `
+          : `
       // Approximate gradient using manual sampling
       float epsilon = 2.0;
       vec2 h = vec2(epsilon, 0.0);
@@ -293,7 +304,8 @@ const animationRef = useRef<number | null>(null);
       float sdf4 = boxSDF(centeredUV4);
       
       vec2 grad = normalize(vec2(sdf1 - sdf2, sdf3 - sdf4));
-      `}
+      `
+      }
       
       float offsetAmount = pow(abs(sdf), 12.0) * -0.05 * u_distortion;
       return grad * offsetAmount;
@@ -304,13 +316,16 @@ const animationRef = useRef<number | null>(null);
         return 0.0;
       }
       
-      ${hasDerivatives ? `
+      ${
+        hasDerivatives
+          ? `
       #ifdef GL_OES_standard_derivatives
       vec2 grad = normalize(vec2(dFdx(sdf), dFdy(sdf)));
       #else
       vec2 grad = normalize(vec2(0.1, 0.1));
       #endif
-      ` : `
+      `
+          : `
       // Approximate gradient using manual sampling
       float epsilon = 2.0;
       vec2 h = vec2(epsilon, 0.0);
@@ -325,7 +340,8 @@ const animationRef = useRef<number | null>(null);
       float sdf4 = boxSDF(centeredUV4);
       
       vec2 grad = normalize(vec2(sdf1 - sdf2, sdf3 - sdf4));
-      `}
+      `
+      }
       
       return 1.0 - clamp(pow(1.0 - abs(dot(grad, vec2(-0.707, 0.707))), 0.5), 0.0, 1.0);
     }
@@ -410,182 +426,246 @@ const animationRef = useRef<number | null>(null);
       
       gl_FragColor = vec4(mix(shadowedBackground, blurredTex, vec3(boxMask)), 1.0);
     }
-  `, [hasDerivatives]);
+  `,
+    [hasDerivatives],
+  );
 
-  const createShader = useCallback((gl: WebGLRenderingContext, type: number, source: string) => {
-    const shader = gl.createShader(type);
-    if (!shader) return null;
-    
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.error('Shader compilation error:', gl.getShaderInfoLog(shader));
-      gl.deleteShader(shader);
-      return null;
-    }
-    
-    return shader;
-  }, []);
+  const createShader = useCallback(
+    (gl: WebGLRenderingContext, type: number, source: string) => {
+      const shader = gl.createShader(type);
+      if (!shader) return null;
 
-  const createProgram = useCallback((gl: WebGLRenderingContext, vertexShader: WebGLShader, fragmentShader: WebGLShader) => {
-    const program = gl.createProgram();
-    if (!program) return null;
-    
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-    
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error('Program linking error:', gl.getProgramInfoLog(program));
-      gl.deleteProgram(program);
-      return null;
-    }
-    
-    return program;
-  }, []);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const createWhiteTexture = useCallback((gl: WebGLRenderingContext) => {
-    const canvas2d = document.createElement('canvas');
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error("Shader compilation error:", gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+
+      return shader;
+    },
+    [],
+  );
+
+  const createProgram = useCallback(
+    (
+      gl: WebGLRenderingContext,
+      vertexShader: WebGLShader,
+      fragmentShader: WebGLShader,
+    ) => {
+      const program = gl.createProgram();
+      if (!program) return null;
+
+      gl.attachShader(program, vertexShader);
+      gl.attachShader(program, fragmentShader);
+      gl.linkProgram(program);
+
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error("Program linking error:", gl.getProgramInfoLog(program));
+        gl.deleteProgram(program);
+        return null;
+      }
+
+      return program;
+    },
+    [],
+  );
+
+  const createWhiteTexture = useCallback(() => {
+    const canvas2d = document.createElement("canvas");
     canvas2d.width = canvas2d.height = 512;
-    const ctx = canvas2d.getContext('2d')!;
-    
+    const ctx = canvas2d.getContext("2d")!;
+
     // Create a neutral white background
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, 512, 512);
-    
+
     return canvas2d;
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const createBlurhashTexture = useCallback((gl: WebGLRenderingContext, blurhash: string) => {
-    try {
-      // Decode blurhash to a small canvas for fast display
-      const blurhashCanvas = decodeToCanvas(blurhash, 64, 64, 1);
-      return blurhashCanvas;
-    } catch (error) {
-      console.warn('Failed to decode blurhash:', error);
-      return createWhiteTexture(gl);
-    }
-  }, [createWhiteTexture]);
-
-  const loadTexture = useCallback((gl: WebGLRenderingContext, media: BackgroundMedia) => {
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    
-    // Always use white as initial texture instead of blurhash for neutral transitions
-    const initialCanvas = createWhiteTexture(gl);
-    
-    // Load initial texture immediately
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, initialCanvas);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-
-    if (media.type === 'video') {
-      // Create video element
-      if (videoRef.current) {
-        videoRef.current.pause();
-        videoRef.current.removeAttribute('src');
-      }
-      
-      const video = document.createElement('video');
-      video.crossOrigin = 'anonymous';
-      video.muted = true;
-      video.loop = true;
-      video.playsInline = true;
-      video.autoplay = true;
-      
-      video.addEventListener('loadedmetadata', () => {
-        imageAspectRef.current = video.videoWidth / video.videoHeight;
-        setIsImageLoaded(true);
-      });
-      
-      video.addEventListener('canplaythrough', () => {
-        video.play().catch(e => {
-          console.warn('Video autoplay failed:', e);
-        });
-      });
-      
-      video.src = media.url;
-      videoRef.current = video;
-    } else {
-      // Clear video reference if switching from video to image
-      if (videoRef.current) {
-        videoRef.current.pause();
-        videoRef.current.removeAttribute('src');
-        videoRef.current = null;
-      }
-      
-      // Load image in background while showing white
-      if (media.url) {
-        const image = new Image();
-        image.crossOrigin = 'anonymous';
-        image.onload = () => {
-          imageAspectRef.current = image.width / image.height;
-          setIsImageLoaded(true);
-          
-          // Update texture with full resolution image
-          gl.bindTexture(gl.TEXTURE_2D, texture);
-          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        };
-        image.onerror = () => {
-          console.warn('Failed to load image:', media.url);
-          setIsImageLoaded(false);
-        };
-        image.src = media.url;
-      }
-    }
-    
-    return texture;
-  }, [createWhiteTexture]);
-
-  const updateVideoTexture = useCallback((gl: WebGLRenderingContext, texture: WebGLTexture, video: HTMLVideoElement) => {
-    if (video.readyState >= video.HAVE_CURRENT_DATA) {
+  const loadTexture = useCallback(
+    (gl: WebGLRenderingContext, media: BackgroundMedia) => {
+      const texture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+
+      // Always use white as initial texture instead of blurhash for neutral transitions
+      const initialCanvas = createWhiteTexture();
+
+      // Load initial texture immediately
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        initialCanvas,
+      );
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    }
-  }, []);
+
+      if (media.type === "video") {
+        // Create video element
+        if (videoRef.current) {
+          videoRef.current.pause();
+          videoRef.current.removeAttribute("src");
+        }
+
+        const video = document.createElement("video");
+        video.crossOrigin = "anonymous";
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.autoplay = true;
+
+        video.addEventListener("loadedmetadata", () => {
+          imageAspectRef.current = video.videoWidth / video.videoHeight;
+          setIsImageLoaded(true);
+        });
+
+        video.addEventListener("canplaythrough", () => {
+          video.play().catch((e) => {
+            console.warn("Video autoplay failed:", e);
+          });
+        });
+
+        video.src = media.url;
+        videoRef.current = video;
+      } else {
+        // Clear video reference if switching from video to image
+        if (videoRef.current) {
+          videoRef.current.pause();
+          videoRef.current.removeAttribute("src");
+          videoRef.current = null;
+        }
+
+        // Load image in background while showing white
+        if (media.url) {
+          const image = new Image();
+          image.crossOrigin = "anonymous";
+          image.onload = () => {
+            imageAspectRef.current = image.width / image.height;
+            setIsImageLoaded(true);
+
+            // Update texture with full resolution image
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(
+              gl.TEXTURE_2D,
+              0,
+              gl.RGBA,
+              gl.RGBA,
+              gl.UNSIGNED_BYTE,
+              image,
+            );
+            gl.texParameteri(
+              gl.TEXTURE_2D,
+              gl.TEXTURE_WRAP_S,
+              gl.CLAMP_TO_EDGE,
+            );
+            gl.texParameteri(
+              gl.TEXTURE_2D,
+              gl.TEXTURE_WRAP_T,
+              gl.CLAMP_TO_EDGE,
+            );
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          };
+          image.onerror = () => {
+            console.warn("Failed to load image:", media.url);
+            setIsImageLoaded(false);
+          };
+          image.src = media.url;
+        }
+      }
+
+      return texture;
+    },
+    [createWhiteTexture],
+  );
+
+  const updateVideoTexture = useCallback(
+    (
+      gl: WebGLRenderingContext,
+      texture: WebGLTexture,
+      video: HTMLVideoElement,
+    ) => {
+      if (video.readyState >= video.HAVE_CURRENT_DATA) {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          video,
+        );
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      }
+    },
+    [],
+  );
 
   // Updated shape mapping function - removed triangle, diamond, heart
   const getShapeUniform = useCallback((shape: string): number => {
     switch (shape) {
-      case 'rectangle': return 0.0;
-      case 'circle': return 1.0;
-      case 'star': return 2.0;
-      case 'hexagon': return 3.0;
-      case 'donut': return 4.0;
-      default: return 0.0;
+      case "rectangle":
+        return 0.0;
+      case "circle":
+        return 1.0;
+      case "star":
+        return 2.0;
+      case "hexagon":
+        return 3.0;
+      case "donut":
+        return 4.0;
+      default:
+        return 0.0;
     }
   }, []);
 
   // Cache uniform locations to avoid repeated WebGL calls
-  const cacheUniformLocations = useCallback((gl: WebGLRenderingContext, program: WebGLProgram) => {
-    const uniformNames = [
-      'u_time', 'u_resolution', 'u_mouse', 'u_texture', 'u_width', 'u_height',
-      'u_tint', 'u_saturation', 'u_distortion', 'u_blur', 'u_imageAspect',
-      'u_canvasAspect', 'u_glassMode', 'u_shadowIntensity', 'u_shadowOffset', 
-      'u_shadowBlur', 'u_cornerRadius', 'u_chromaticAberration', 'u_shape',
-      'u_donutThickness', 'u_starPoints', 'u_starInnerRadius'
-    ];
-    
-    const locations: Record<string, WebGLUniformLocation | null> = {};
-    uniformNames.forEach(name => {
-      locations[name] = gl.getUniformLocation(program, name);
-    });
-    
-    uniformLocationsRef.current = locations;
-  }, []);
+  const cacheUniformLocations = useCallback(
+    (gl: WebGLRenderingContext, program: WebGLProgram) => {
+      const uniformNames = [
+        "u_time",
+        "u_resolution",
+        "u_mouse",
+        "u_texture",
+        "u_width",
+        "u_height",
+        "u_tint",
+        "u_saturation",
+        "u_distortion",
+        "u_blur",
+        "u_imageAspect",
+        "u_canvasAspect",
+        "u_glassMode",
+        "u_shadowIntensity",
+        "u_shadowOffset",
+        "u_shadowBlur",
+        "u_cornerRadius",
+        "u_chromaticAberration",
+        "u_shape",
+        "u_donutThickness",
+        "u_starPoints",
+        "u_starInnerRadius",
+      ];
+
+      const locations: Record<string, WebGLUniformLocation | null> = {};
+      uniformNames.forEach((name) => {
+        locations[name] = gl.getUniformLocation(program, name);
+      });
+
+      uniformLocationsRef.current = locations;
+    },
+    [],
+  );
 
   // Signal when shader is ready
   useEffect(() => {
@@ -595,59 +675,78 @@ const animationRef = useRef<number | null>(null);
         setIsShaderReady(true);
         onReady?.();
       }, 200);
-      
+
       return () => clearTimeout(timer);
     }
   }, [programRef.current, textureRef.current, isShaderReady, onReady]);
 
   // Memoize fragment shader source to avoid recreation
-  const fragmentShaderSource = useMemo(() => getFragmentShaderSource(hasDerivatives), [hasDerivatives, getFragmentShaderSource]);
+  const fragmentShaderSource = useMemo(
+    () => getFragmentShaderSource(hasDerivatives),
+    [hasDerivatives, getFragmentShaderSource],
+  );
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const gl = canvas.getContext('webgl');
+    const gl = canvas.getContext("webgl");
     if (!gl) {
-      console.error('WebGL not supported');
+      console.error("WebGL not supported");
       return;
     }
 
     glRef.current = gl;
 
     // Check for derivative extension
-    const derivativeExt = gl.getExtension('OES_standard_derivatives');
+    const derivativeExt = gl.getExtension("OES_standard_derivatives");
     const hasDerivativesSupport = !!derivativeExt;
     setHasDerivatives(hasDerivativesSupport);
 
     // Create shaders and program
     const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-    
+    const fragmentShader = createShader(
+      gl,
+      gl.FRAGMENT_SHADER,
+      fragmentShaderSource,
+    );
+
     if (!vertexShader || !fragmentShader) return;
 
     const program = createProgram(gl, vertexShader, fragmentShader);
     if (!program) return;
 
     programRef.current = program;
-    
+
     // Cache uniform locations for performance
     cacheUniformLocations(gl, program);
 
     // Setup vertices for full screen quad with corrected texture coordinates (flipped Y)
     const vertices = new Float32Array([
-      -1, -1, 0, 1,  // bottom-left: position (-1,-1), texture (0,1)
-       1, -1, 1, 1,  // bottom-right: position (1,-1), texture (1,1)
-      -1,  1, 0, 0,  // top-left: position (-1,1), texture (0,0)
-       1,  1, 1, 0,  // top-right: position (1,1), texture (1,0)
+      -1,
+      -1,
+      0,
+      1, // bottom-left: position (-1,-1), texture (0,1)
+      1,
+      -1,
+      1,
+      1, // bottom-right: position (1,-1), texture (1,1)
+      -1,
+      1,
+      0,
+      0, // top-left: position (-1,1), texture (0,0)
+      1,
+      1,
+      1,
+      0, // top-right: position (1,1), texture (1,0)
     ]);
 
     const buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
-    const positionLocation = gl.getAttribLocation(program, 'a_position');
-    const texCoordLocation = gl.getAttribLocation(program, 'a_texCoord');
+    const positionLocation = gl.getAttribLocation(program, "a_position");
+    const texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
 
     gl.enableVertexAttribArray(positionLocation);
     gl.enableVertexAttribArray(texCoordLocation);
@@ -663,8 +762,15 @@ const animationRef = useRef<number | null>(null);
       // Create the default white texture
       const texture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, texture);
-      const whiteCanvas = createWhiteTexture(gl);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, whiteCanvas);
+      const whiteCanvas = createWhiteTexture();
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        whiteCanvas,
+      );
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -681,10 +787,18 @@ const animationRef = useRef<number | null>(null);
       // Clean up video if it exists
       if (videoRef.current) {
         videoRef.current.pause();
-        videoRef.current.removeAttribute('src');
+        videoRef.current.removeAttribute("src");
       }
     };
-  }, [backgroundMedia, createShader, createProgram, loadTexture, createWhiteTexture, fragmentShaderSource, cacheUniformLocations]);
+  }, [
+    backgroundMedia,
+    createShader,
+    createProgram,
+    loadTexture,
+    createWhiteTexture,
+    fragmentShaderSource,
+    cacheUniformLocations,
+  ]);
 
   useEffect(() => {
     const render = () => {
@@ -707,7 +821,7 @@ const animationRef = useRef<number | null>(null);
       const canvasAspect = canvas.width / canvas.height;
 
       // Update video texture if using video
-      if (videoRef.current && backgroundMedia.type === 'video') {
+      if (videoRef.current && backgroundMedia.type === "video") {
         updateVideoTexture(gl, texture, videoRef.current);
       }
 
@@ -716,24 +830,46 @@ const animationRef = useRef<number | null>(null);
       // Use cached uniform locations for better performance
       const locations = uniformLocationsRef.current;
 
-      gl.uniform1f(locations.u_time, (Date.now() - startTimeRef.current) / 1000);
+      gl.uniform1f(
+        locations.u_time,
+        (Date.now() - startTimeRef.current) / 1000,
+      );
       gl.uniform2f(locations.u_resolution, canvas.width, canvas.height);
-      gl.uniform2f(locations.u_mouse, uniforms.mouseX * devicePixelRatio, uniforms.mouseY * devicePixelRatio);
+      gl.uniform2f(
+        locations.u_mouse,
+        uniforms.mouseX * devicePixelRatio,
+        uniforms.mouseY * devicePixelRatio,
+      );
       gl.uniform1i(locations.u_texture, 0);
       gl.uniform1f(locations.u_width, uniforms.width);
       gl.uniform1f(locations.u_height, uniforms.height);
-      gl.uniform3f(locations.u_tint, uniforms.tintR, uniforms.tintG, uniforms.tintB);
+      gl.uniform3f(
+        locations.u_tint,
+        uniforms.tintR,
+        uniforms.tintG,
+        uniforms.tintB,
+      );
       gl.uniform1f(locations.u_saturation, uniforms.saturation);
       gl.uniform1f(locations.u_distortion, uniforms.distortion);
       gl.uniform1f(locations.u_blur, uniforms.blur);
       gl.uniform1f(locations.u_imageAspect, imageAspectRef.current);
       gl.uniform1f(locations.u_canvasAspect, canvasAspect);
-      gl.uniform1f(locations.u_glassMode, uniforms.glassMode === 'dark' ? 1.0 : 0.0);
+      gl.uniform1f(
+        locations.u_glassMode,
+        uniforms.glassMode === "dark" ? 1.0 : 0.0,
+      );
       gl.uniform1f(locations.u_shadowIntensity, uniforms.shadowIntensity);
-      gl.uniform2f(locations.u_shadowOffset, uniforms.shadowOffsetX, uniforms.shadowOffsetY);
+      gl.uniform2f(
+        locations.u_shadowOffset,
+        uniforms.shadowOffsetX,
+        uniforms.shadowOffsetY,
+      );
       gl.uniform1f(locations.u_shadowBlur, uniforms.shadowBlur);
       gl.uniform1f(locations.u_cornerRadius, uniforms.cornerRadius);
-      gl.uniform1f(locations.u_chromaticAberration, uniforms.chromaticAberration);
+      gl.uniform1f(
+        locations.u_chromaticAberration,
+        uniforms.chromaticAberration,
+      );
       gl.uniform1f(locations.u_shape, getShapeUniform(uniforms.shape));
       gl.uniform1f(locations.u_donutThickness, uniforms.donutThickness);
       gl.uniform1f(locations.u_starPoints, uniforms.starPoints);
@@ -754,27 +890,36 @@ const animationRef = useRef<number | null>(null);
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [uniforms, backgroundMedia, isTransitioning, updateVideoTexture, getShapeUniform]);
+  }, [
+    uniforms,
+    backgroundMedia,
+    isTransitioning,
+    updateVideoTexture,
+    getShapeUniform,
+  ]);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left);
-    const y = (canvas.offsetHeight - (e.clientY - rect.top));
-    
-    console.log(x, y);
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = canvas.offsetHeight - (e.clientY - rect.top);
 
-    // Update mouse position in uniforms (this would be handled by parent component)
-  }, []);
+      console.log(x, y);
+
+      // Update mouse position in uniforms (this would be handled by parent component)
+    },
+    [],
+  );
 
   return (
     <canvas
       ref={canvasRef}
       className={className}
       onMouseMove={handleMouseMove}
-      style={{ width: '100%', height: '100%' }}
+      style={{ width: "100%", height: "100%" }}
     />
   );
 }

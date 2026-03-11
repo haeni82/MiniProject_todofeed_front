@@ -9,14 +9,14 @@ type PageType = "todo" | "feed" | "feed-detail";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageType>("todo");
-  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
 
   const handleNavigate = (page: "todo" | "feed") => {
     setCurrentPage(page);
     setSelectedPostId(null);
   };
 
-  const handleViewPost = (postId: string) => {
+  const handleViewPost = (postId: number) => {
     setSelectedPostId(postId);
     setCurrentPage("feed-detail");
   };
